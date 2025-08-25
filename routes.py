@@ -152,7 +152,8 @@ def new_kanban_card():
 @app.route('/kanban/card/<card_id>/move', methods=['POST'])
 @login_required
 def move_kanban_card(card_id):
-    new_column = request.json.get('column')
+    data = request.get_json() or {}
+    new_column = data.get('column')
     if KanbanCard.move_to_column(card_id, new_column):
         return jsonify({'success': True})
     return jsonify({'success': False}), 400
