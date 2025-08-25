@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}WhatsApp - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fab fa-whatsapp"></i> WhatsApp Business</h1>
+                <p class="text-muted">Interface mock para demonstração (MVP)</p>
+            </div>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#messageModal">
+                <i class="fas fa-paper-plane"></i> Enviar Mensagem
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Messages List -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fab fa-whatsapp"></i> Conversas Recentes</h5>
+            </div>
+            <div class="card-body" style="height: 500px; overflow-y: auto;">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="message-item mb-3 {% if message.message_type == 'sent' %}text-end{% endif %}">
+                        <div class="message-bubble {% if message.message_type == 'sent' %}bg-success text-white ms-auto{% else %}bg-light{% endif %}" style="max-width: 70%; padding: 10px; border-radius: 10px; display: inline-block;">
+                            <div class="message-content">
+                                <strong>{{ message.sender }}</strong>
+                                <p class="mb-1">{{ message.message }}</p>
+                                <small class="{% if message.message_type == 'sent' %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ message.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                    {% if not message.read and message.message_type == 'received' %}
+                                        <span class="badge bg-warning ms-1">Nova</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fab fa-whatsapp text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3">Nenhuma mensagem ainda</h4>
+                        <p class="text-muted">As conversas do WhatsApp aparecerão aqui.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fab fa-whatsapp"></i> Enviar Mensagem WhatsApp</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('send_whatsapp_message') }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Modo Demo:</strong> Esta é uma interface mock para demonstração. Em produção, será integrada com a API do WhatsApp Business.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">Cliente</label>
+                        <select class="form-control" id="client_id" name="client_id">
+                            <option value="">Selecione um cliente...</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name }} - {{ client.phone }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Mensagem *</label>
+                        <textarea class="form-control" id="message" name="message" rows="4" required placeholder="Digite sua mensagem aqui..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Respostas Rápidas</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="addQuickResponse('Olá! Como posso ajudá-lo hoje?')">Saudação</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="addQuickResponse('Obrigado pelo contato! Vou verificar e retorno em breve.')">Confirmação</button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="addQuickResponse('Estou fora do escritório, mas retornarei seu contato em breve.')">Ausência</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane"></i> Enviar Mensagem
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function addQuickResponse(text) {
+    document.getElementById('message').value = text;
+}
+</script>
+{% endblock %}

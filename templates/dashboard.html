@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+        <p class="text-muted">Visão geral da corretora</p>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Total de Clientes</h5>
+                        <h2>{{ total_clients }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Operações Ativas</h5>
+                        <h2>{{ total_cards }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Mensagens não lidas</h5>
+                        <h2>{{ unread_messages }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fab fa-whatsapp fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Vendas Concluídas</h5>
+                        <h2>{{ pipeline_stats.venda_concluida }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-handshake fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Funil de Vendas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="pipeline-stage">
+                            <div class="pipeline-number">{{ pipeline_stats.atendimento_inicial }}</div>
+                            <div class="pipeline-label">Atendimento Inicial</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="pipeline-stage">
+                            <div class="pipeline-number">{{ pipeline_stats.proposta_enviada }}</div>
+                            <div class="pipeline-label">Propostas Enviadas</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="pipeline-stage">
+                            <div class="pipeline-number">{{ pipeline_stats.venda_andamento }}</div>
+                            <div class="pipeline-label">Vendas em Andamento</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="pipeline-stage">
+                            <div class="pipeline-number">{{ pipeline_stats.venda_concluida }}</div>
+                            <div class="pipeline-label">Vendas Concluídas</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="pipeline-stage">
+                            <div class="pipeline-number">{{ pipeline_stats.pos_venda }}</div>
+                            <div class="pipeline-label">Pós-venda</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock"></i> Atividades Recentes</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_cards %}
+                    <div class="list-group list-group-flush">
+                        {% for card in recent_cards %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ card.title }}</h6>
+                                    <p class="mb-1">{{ card.description[:100] }}{% if card.description|length > 100 %}...{% endif %}</p>
+                                    <small class="text-muted">Atualizado em {{ card.updated_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                </div>
+                                <span class="badge bg-primary">{{ card.column.replace('_', ' ').title() }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">Nenhuma atividade recente.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

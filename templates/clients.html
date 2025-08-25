@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-users"></i> Gestão de Clientes</h1>
+                <p class="text-muted">Gerencie seus clientes e informações</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#clientModal">
+                <i class="fas fa-plus"></i> Novo Cliente
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex">
+            <input type="text" class="form-control me-2" name="search" placeholder="Buscar clientes..." value="{{ search }}">
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Clients Table -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-table"></i> Lista de Clientes</h5>
+    </div>
+    <div class="card-body">
+        {% if clients %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Telefone</th>
+                        <th>CPF/CNPJ</th>
+                        <th>Tipo de Seguro</th>
+                        <th>Cadastrado em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client.name }}</td>
+                        <td>{{ client.email }}</td>
+                        <td>{{ client.phone }}</td>
+                        <td>{{ client.cpf_cnpj }}</td>
+                        <td>{{ client.insurance_type or '-' }}</td>
+                        <td>{{ client.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editClient({{ client.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cliente?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">Nenhum cliente encontrado</h4>
+            <p class="text-muted">{% if search %}Tente uma busca diferente ou {% endif %}adicione um novo cliente para começar.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Client Modal -->
+<div class="modal fade" id="clientModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientModalTitle">Novo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="clientForm" method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Nome Completo *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Telefone *</label>
+                            <input type="text" class="form-control" id="phone" name="phone" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cpf_cnpj" class="form-label">CPF/CNPJ *</label>
+                            <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Endereço</label>
+                        <textarea class="form-control" id="address" name="address" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="insurance_type" class="form-label">Tipo de Seguro</label>
+                            <select class="form-control" id="insurance_type" name="insurance_type">
+                                <option value="">Selecione...</option>
+                                <option value="auto">Auto</option>
+                                <option value="vida">Vida</option>
+                                <option value="residencial">Residencial</option>
+                                <option value="empresarial">Empresarial</option>
+                                <option value="saude">Saúde</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Observações</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store clients data for editing
+const clientsData = {{ clients | tojson }};
+
+function editClient(clientId) {
+    const client = clientsData.find(c => c.id === clientId);
+    if (!client) return;
+    
+    // Update modal title and form action
+    document.getElementById('clientModalTitle').textContent = 'Editar Cliente';
+    document.getElementById('clientForm').action = `/clients/${clientId}/edit`;
+    
+    // Fill form with client data
+    document.getElementById('name').value = client.name;
+    document.getElementById('email').value = client.email;
+    document.getElementById('phone').value = client.phone;
+    document.getElementById('cpf_cnpj').value = client.cpf_cnpj;
+    document.getElementById('address').value = client.address || '';
+    document.getElementById('insurance_type').value = client.insurance_type || '';
+    document.getElementById('notes').value = client.notes || '';
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('clientModal')).show();
+}
+
+// Reset form when modal is hidden
+document.getElementById('clientModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('clientModalTitle').textContent = 'Novo Cliente';
+    document.getElementById('clientForm').action = '/clients/new';
+    document.getElementById('clientForm').reset();
+});
+</script>
+{% endblock %}

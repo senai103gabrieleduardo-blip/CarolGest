@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Kanban - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-columns"></i> Kanban de Operações</h1>
+                <p class="text-muted">Gerencie o funil de vendas e atendimentos</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+                <i class="fas fa-plus"></i> Novo Cartão
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+    <div class="row">
+        <!-- Atendimento Inicial -->
+        <div class="col kanban-column">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-phone"></i> Atendimento Inicial ({{ columns.atendimento_inicial|length }})</h6>
+                </div>
+                <div class="card-body p-2" id="atendimento_inicial" data-column="atendimento_inicial">
+                    {% for card in columns.atendimento_inicial %}
+                    <div class="kanban-card" data-card-id="{{ card.id }}">
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">{{ card.title }}</h6>
+                                <p class="card-text small">{{ card.description[:50] }}{% if card.description|length > 50 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ card.created_at.strftime('%d/%m') }}</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Editar</a></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('delete_kanban_card', card_id=card.id) }}" style="display: inline;">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Excluir cartão?')">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposta Enviada -->
+        <div class="col kanban-column">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h6 class="mb-0"><i class="fas fa-file-alt"></i> Proposta Enviada ({{ columns.proposta_enviada|length }})</h6>
+                </div>
+                <div class="card-body p-2" id="proposta_enviada" data-column="proposta_enviada">
+                    {% for card in columns.proposta_enviada %}
+                    <div class="kanban-card" data-card-id="{{ card.id }}">
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">{{ card.title }}</h6>
+                                <p class="card-text small">{{ card.description[:50] }}{% if card.description|length > 50 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ card.created_at.strftime('%d/%m') }}</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Editar</a></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('delete_kanban_card', card_id=card.id) }}" style="display: inline;">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Excluir cartão?')">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Venda em Andamento -->
+        <div class="col kanban-column">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-clock"></i> Venda em Andamento ({{ columns.venda_andamento|length }})</h6>
+                </div>
+                <div class="card-body p-2" id="venda_andamento" data-column="venda_andamento">
+                    {% for card in columns.venda_andamento %}
+                    <div class="kanban-card" data-card-id="{{ card.id }}">
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">{{ card.title }}</h6>
+                                <p class="card-text small">{{ card.description[:50] }}{% if card.description|length > 50 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ card.created_at.strftime('%d/%m') }}</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Editar</a></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('delete_kanban_card', card_id=card.id) }}" style="display: inline;">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Excluir cartão?')">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Venda Concluída -->
+        <div class="col kanban-column">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-handshake"></i> Venda Concluída ({{ columns.venda_concluida|length }})</h6>
+                </div>
+                <div class="card-body p-2" id="venda_concluida" data-column="venda_concluida">
+                    {% for card in columns.venda_concluida %}
+                    <div class="kanban-card" data-card-id="{{ card.id }}">
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">{{ card.title }}</h6>
+                                <p class="card-text small">{{ card.description[:50] }}{% if card.description|length > 50 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ card.created_at.strftime('%d/%m') }}</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Editar</a></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('delete_kanban_card', card_id=card.id) }}" style="display: inline;">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Excluir cartão?')">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pós-venda -->
+        <div class="col kanban-column">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-users-cog"></i> Pós-venda ({{ columns.pos_venda|length }})</h6>
+                </div>
+                <div class="card-body p-2" id="pos_venda" data-column="pos_venda">
+                    {% for card in columns.pos_venda %}
+                    <div class="kanban-card" data-card-id="{{ card.id }}">
+                        <div class="card mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">{{ card.title }}</h6>
+                                <p class="card-text small">{{ card.description[:50] }}{% if card.description|length > 50 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ card.created_at.strftime('%d/%m') }}</small>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit"></i> Editar</a></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('delete_kanban_card', card_id=card.id) }}" style="display: inline;">
+                                                    <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Excluir cartão?')">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card Modal -->
+<div class="modal fade" id="cardModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Novo Cartão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('new_kanban_card') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Título *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">Cliente</label>
+                        <select class="form-control" id="client_id" name="client_id">
+                            <option value="">Selecione um cliente...</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Responsável</label>
+                        <select class="form-control" id="assigned_to" name="assigned_to">
+                            <option value="">Selecione um responsável...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="column" class="form-label">Coluna</label>
+                        <select class="form-control" id="column" name="column">
+                            <option value="atendimento_inicial">Atendimento Inicial</option>
+                            <option value="proposta_enviada">Proposta Enviada</option>
+                            <option value="venda_andamento">Venda em Andamento</option>
+                            <option value="venda_concluida">Venda Concluída</option>
+                            <option value="pos_venda">Pós-venda</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Cartão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/kanban.js') }}"></script>
+{% endblock %}

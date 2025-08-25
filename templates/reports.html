@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-chart-bar"></i> Relatórios e Analytics</h1>
+                <p class="text-muted">Análise de performance e resultados</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-success me-2">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </button>
+                <button type="button" class="btn btn-danger">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h3>{{ total_clients }}</h3>
+                <p class="text-muted">Total de Clientes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-handshake fa-2x text-success mb-2"></i>
+                <h3>{{ total_sales }}</h3>
+                <p class="text-muted">Vendas Concluídas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                <h3>{% if pipeline_conversion.leads > 0 %}{{ ((pipeline_conversion.closed / pipeline_conversion.leads) * 100)|round(1) }}%{% else %}0%{% endif %}</h3>
+                <p class="text-muted">Taxa de Conversão</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                <h3>{{ pipeline_conversion.leads + pipeline_conversion.proposals + pipeline_conversion.in_progress }}</h3>
+                <p class="text-muted">Pipeline Ativo</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row mb-4">
+    <!-- Pipeline Conversion Chart -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-funnel-dollar"></i> Funil de Conversão</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="pipelineChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Performance Chart -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Performance Mensal</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Tables -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> Performance Detalhada por Mês</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mês</th>
+                                <th>Vendas</th>
+                                <th>Receita</th>
+                                <th>Ticket Médio</th>
+                                <th>Crescimento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month in monthly_performance %}
+                            <tr>
+                                <td>{{ month.month }}</td>
+                                <td>{{ month.sales }}</td>
+                                <td>R$ {{ "{:,.2f}".format(month.revenue) }}</td>
+                                <td>R$ {{ "{:,.2f}".format(month.revenue / month.sales) }}</td>
+                                <td>
+                                    {% if loop.index > 1 %}
+                                        {% set prev_month = monthly_performance[loop.index0 - 1] %}
+                                        {% set growth = ((month.sales - prev_month.sales) / prev_month.sales * 100) %}
+                                        {% if growth > 0 %}
+                                            <span class="text-success"><i class="fas fa-arrow-up"></i> {{ "{:.1f}".format(growth) }}%</span>
+                                        {% elif growth < 0 %}
+                                            <span class="text-danger"><i class="fas fa-arrow-down"></i> {{ "{:.1f}".format(growth|abs) }}%</span>
+                                        {% else %}
+                                            <span class="text-muted">0%</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Pipeline Conversion Chart
+const pipelineCtx = document.getElementById('pipelineChart').getContext('2d');
+const pipelineChart = new Chart(pipelineCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Leads', 'Propostas', 'Em Andamento', 'Fechadas'],
+        datasets: [{
+            label: 'Número de Oportunidades',
+            data: [
+                {{ pipeline_conversion.leads }},
+                {{ pipeline_conversion.proposals }},
+                {{ pipeline_conversion.in_progress }},
+                {{ pipeline_conversion.closed }}
+            ],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 193, 7, 0.8)',
+                'rgba(13, 110, 253, 0.8)',
+                'rgba(25, 135, 84, 0.8)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 193, 7, 1)',
+                'rgba(13, 110, 253, 1)',
+                'rgba(25, 135, 84, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Monthly Performance Chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for month in monthly_performance %}'{{ month.month }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Vendas',
+            data: [{% for month in monthly_performance %}{{ month.sales }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgba(25, 135, 84, 1)',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Receita (em milhares)',
+            data: [{% for month in monthly_performance %}{{ month.revenue / 1000 }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgba(13, 110, 253, 1)',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            tension: 0.1,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false,
+                },
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
