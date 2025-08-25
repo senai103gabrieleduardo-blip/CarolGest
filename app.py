@@ -1,8 +1,15 @@
 import os
 import logging
 from flask import Flask
-from flask_login import LoginManager
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+try:
+    from flask_login import LoginManager
+except ImportError:
+    print("flask_login not found, installing...")
+    import subprocess
+    subprocess.check_call(["pip", "install", "flask-login"])
+    from flask_login import LoginManager
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -15,11 +22,11 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # type: ignore
 login_manager.login_message = 'Por favor, faça login para acessar esta página.'
 
 # Import models and routes after app creation to avoid circular imports
-from models import User, Client, KanbanCard, WhatsAppMessage
+from models import User, Client, KanbanCard, WhatsAppMessage, SocialAccount, SocialPost
 from routes import *
 
 @login_manager.user_loader

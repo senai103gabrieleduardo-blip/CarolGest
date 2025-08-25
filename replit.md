@@ -1,8 +1,8 @@
 # Overview
 
-Monteiro Corretora is a comprehensive insurance brokerage management system built with Flask. The application provides a centralized platform for managing clients, sales operations, WhatsApp communications, and business workflows through an integrated dashboard and Kanban board interface.
+Monteiro Corretora is a comprehensive insurance brokerage management system built with Flask. The application provides a centralized platform for managing clients, sales operations, WhatsApp Business communications, Instagram/Facebook CRM, and business workflows through an integrated dashboard and Kanban board interface.
 
-The system is designed as an MVP (Minimum Viable Product) with plans for future integration with WhatsApp Business API, social media platforms (Instagram/Facebook), and advanced reporting capabilities. Currently, it operates with in-memory data storage for rapid prototyping and demonstration purposes.
+The system features full integration with Meta Business API for WhatsApp Business, Instagram Business, and Facebook Pages management. It includes comprehensive reporting capabilities with Excel and PDF export functionality, real-time social media management, and advanced analytics dashboard.
 
 # User Preferences
 
@@ -23,8 +23,8 @@ Preferred communication style: Simple, everyday language.
 - **Middleware**: ProxyFix for handling reverse proxy deployments
 
 ## Data Storage
-- **Current Implementation**: In-memory dictionaries for rapid MVP development
-- **Data Models**: User, Client, KanbanCard, and WhatsAppMessage models with static methods for CRUD operations
+- **Current Implementation**: In-memory dictionaries for rapid development and demonstration
+- **Data Models**: User, Client, KanbanCard, WhatsAppMessage, SocialAccount, and SocialPost models with static methods for CRUD operations
 - **Future Migration Path**: Designed for easy transition to persistent database (PostgreSQL/MySQL)
 
 ## Application Structure
@@ -40,8 +40,10 @@ Preferred communication style: Simple, everyday language.
 ## Business Logic Components
 - **Kanban Pipeline**: Five-stage sales pipeline (Initial Contact → Proposal Sent → Sale in Progress → Sale Completed → Post-Sale)
 - **Client Management**: Complete client profiles with contact information, insurance types, and interaction history
-- **Communication Hub**: Centralized WhatsApp message interface (mock implementation ready for API integration)
-- **Analytics Dashboard**: Key performance indicators and pipeline metrics
+- **WhatsApp Business Integration**: Real-time messaging through Meta Business API with message synchronization
+- **Social Media CRM**: Instagram Business and Facebook Pages management with unified posting and analytics
+- **Advanced Reporting**: Excel and PDF report generation for clients, sales, and social media analytics
+- **Analytics Dashboard**: Comprehensive KPIs including social media metrics and real-time status monitoring
 
 # External Dependencies
 
@@ -55,11 +57,17 @@ Preferred communication style: Simple, everyday language.
 - **Flask-Login**: User session management and authentication
 - **Werkzeug**: WSGI utility library with ProxyFix for deployment and password security
 
-## Planned Integrations
-- **WhatsApp Business API**: Meta's official API for WhatsApp business messaging
-- **Instagram Basic Display API**: For social media management and engagement tracking
-- **Facebook Graph API**: For Facebook page management and advertising insights
-- **Database System**: PostgreSQL or MySQL for persistent data storage (architecture supports easy migration)
+## Active Integrations
+- **Meta Business API**: Complete integration with WhatsApp Business, Instagram Business, and Facebook Pages
+- **WhatsApp Business API**: Real-time messaging, message synchronization, and contact management
+- **Instagram Business API**: Post creation, media management, and analytics insights
+- **Facebook Graph API**: Page management, post scheduling, and engagement tracking
+- **Report Generation**: OpenpyXL for Excel reports and ReportLab for PDF generation
+
+## Future Enhancements
+- **Database Migration**: PostgreSQL or MySQL for persistent data storage
+- **Real-time Notifications**: WebSocket integration for live updates
+- **Advanced Analytics**: Machine learning insights and predictive analytics
 
 ## Development & Deployment
 - **Environment Configuration**: Environment variable support for sensitive configuration

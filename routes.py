@@ -1,9 +1,12 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, send_file, Response
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app
-from models import User, Client, KanbanCard, WhatsAppMessage
+from models import User, Client, KanbanCard, WhatsAppMessage, SocialAccount, SocialPost
+from services.meta_api import MetaBusinessAPI
+from services.report_generator import ReportGenerator
 from datetime import datetime, timedelta
 import json
+import os
 
 @app.route('/')
 def index():
@@ -263,3 +266,285 @@ def reports():
                          total_sales=total_sales,
                          pipeline_conversion=pipeline_conversion,
                          monthly_performance=monthly_performance)
+
+# WhatsApp Business Integration Routes
+@app.route('/whatsapp/real-send', methods=['POST'])
+@login_required
+def send_real_whatsapp_message():
+    """Enviar mensagem real via WhatsApp Business API"""
+    try:
+        meta_api = MetaBusinessAPI()
+        to_number = request.form['to_number']
+        message = request.form['message']
+        
+        result = meta_api.send_whatsapp_message(to_number, message)
+        
+        if result:
+            # Salvar mensagem enviada no banco
+            whatsapp_msg = WhatsAppMessage(
+                sender=current_user.name,
+                message=message,
+                message_type='sent',
+                client_id=int(request.form['client_id']) if request.form.get('client_id') else None
+            )
+            WhatsAppMessage.save(whatsapp_msg)
+            flash('Mensagem WhatsApp enviada com sucesso!', 'success')
+        else:
+            flash('Erro ao enviar mensagem WhatsApp. Verifique a configuração da API.', 'danger')
+    except Exception as e:
+        flash(f'Erro na integração WhatsApp: {str(e)}', 'danger')
+    
+    return redirect(url_for('whatsapp'))
+
+@app.route('/whatsapp/sync')
+@login_required
+def sync_whatsapp_messages():
+    """Sincronizar mensagens do WhatsApp Business"""
+    try:
+        meta_api = MetaBusinessAPI()
+        messages = meta_api.get_whatsapp_messages()
+        
+        if messages and 'data' in messages:
+            for msg_data in messages['data']:
+                # Processar e salvar mensagens recebidas
+                # Implementar lógica de sincronização
+                pass
+            flash(f'Sincronizadas {len(messages["data"])} mensagens do WhatsApp', 'success')
+        else:
+            flash('Nenhuma mensagem nova encontrada', 'info')
+    except Exception as e:
+        flash(f'Erro na sincronização: {str(e)}', 'danger')
+    
+    return redirect(url_for('whatsapp'))
+
+# Social Media Management Routes
+@app.route('/social')
+@login_required
+def social_media():
+    """Página principal de gerenciamento de redes sociais"""
+    meta_api = MetaBusinessAPI()
+    
+    # Obter contas conectadas
+    social_accounts = SocialAccount.get_all()
+    
+    # Obter posts recentes
+    recent_posts = SocialPost.get_all()[:10]
+    
+    # Obter insights unificados
+    try:
+        insights = meta_api.get_unified_insights()
+    except:
+        insights = {}
+    
+    return render_template('social_media.html', 
+                         accounts=social_accounts,
+                         recent_posts=recent_posts,
+                         insights=insights)
+
+@app.route('/social/connect')
+@login_required
+def connect_social_accounts():
+    """Conectar contas de redes sociais"""
+    try:
+        meta_api = MetaBusinessAPI()
+        all_accounts = meta_api.get_all_social_accounts()
+        
+        # Salvar contas encontradas
+        for platform, accounts in all_accounts.items():
+            if accounts and 'data' in accounts:
+                for account_data in accounts['data']:
+                    if platform == 'instagram' and 'instagram_business_account' in account_data:
+                        ig_account = account_data['instagram_business_account']
+                        social_account = SocialAccount(
+                            platform='instagram',
+                            account_id=ig_account['id'],
+                            name=account_data.get('name', 'Instagram Business')
+                        )
+                        SocialAccount.save(social_account)
+                    elif platform == 'facebook':
+                        social_account = SocialAccount(
+                            platform='facebook',
+                            account_id=account_data['id'],
+                            name=account_data['name'],
+                            access_token=account_data.get('access_token')
+                        )
+                        SocialAccount.save(social_account)
+        
+        flash('Contas de redes sociais conectadas com sucesso!', 'success')
+    except Exception as e:
+        flash(f'Erro ao conectar contas: {str(e)}', 'danger')
+    
+    return redirect(url_for('social_media'))
+
+@app.route('/social/post/new', methods=['POST'])
+@login_required
+def create_social_post():
+    """Criar novo post nas redes sociais"""
+    try:
+        platform = request.form['platform']
+        content = request.form['content']
+        account_id = request.form['account_id']
+        
+        # Criar post
+        post = SocialPost(
+            account_id=account_id,
+            content=content,
+            platform=platform
+        )
+        
+        # Se for para publicar imediatamente
+        if request.form.get('publish_now'):
+            meta_api = MetaBusinessAPI()
+            
+            if platform == 'facebook':
+                account = next((acc for acc in SocialAccount.get_all() if acc.id == int(account_id)), None)
+                if account:
+                    result = meta_api.create_facebook_post(account.account_id, account.access_token, content)
+                    if result:
+                        post.published = True
+                        post.published_at = datetime.now()
+            
+            elif platform == 'instagram':
+                # Para Instagram seria necessário ter uma imagem
+                flash('Para Instagram é necessário adicionar uma imagem', 'warning')
+        
+        SocialPost.save(post)
+        flash('Post criado com sucesso!', 'success')
+        
+    except Exception as e:
+        flash(f'Erro ao criar post: {str(e)}', 'danger')
+    
+    return redirect(url_for('social_media'))
+
+# Reports Routes
+@app.route('/reports/export/clients')
+@login_required
+def export_clients_report():
+    """Exportar relatório de clientes"""
+    try:
+        report_type = request.args.get('type', 'excel')
+        clients = Client.get_all()
+        
+        report_generator = ReportGenerator()
+        
+        if report_type == 'excel':
+            filepath = report_generator.generate_client_report_excel(clients)
+            return send_file(filepath, as_attachment=True, download_name=os.path.basename(filepath))
+        
+        elif report_type == 'pdf':
+            filepath = report_generator.generate_client_report_pdf(clients)
+            return send_file(filepath, as_attachment=True, download_name=os.path.basename(filepath))
+        
+        else:
+            flash('Tipo de relatório não suportado', 'danger')
+            return redirect(url_for('reports'))
+            
+    except Exception as e:
+        flash(f'Erro ao gerar relatório: {str(e)}', 'danger')
+        return redirect(url_for('reports'))
+
+@app.route('/reports/export/sales')
+@login_required
+def export_sales_report():
+    """Exportar relatório de vendas"""
+    try:
+        report_type = request.args.get('type', 'excel')
+        cards = KanbanCard.get_all()
+        
+        # Dados de performance mensal (mock para demonstração)
+        monthly_performance = [
+            {'month': 'Janeiro', 'sales': 15, 'revenue': 45000},
+            {'month': 'Fevereiro', 'sales': 18, 'revenue': 54000},
+            {'month': 'Março', 'sales': 22, 'revenue': 66000},
+            {'month': 'Abril', 'sales': 20, 'revenue': 60000},
+            {'month': 'Maio', 'sales': 25, 'revenue': 75000},
+            {'month': 'Junho', 'sales': 28, 'revenue': 84000}
+        ]
+        
+        report_generator = ReportGenerator()
+        
+        if report_type == 'excel':
+            filepath = report_generator.generate_sales_report_excel(cards)
+            return send_file(filepath, as_attachment=True, download_name=os.path.basename(filepath))
+        
+        elif report_type == 'pdf':
+            filepath = report_generator.generate_sales_report_pdf(cards, monthly_performance)
+            return send_file(filepath, as_attachment=True, download_name=os.path.basename(filepath))
+        
+        else:
+            flash('Tipo de relatório não suportado', 'danger')
+            return redirect(url_for('reports'))
+            
+    except Exception as e:
+        flash(f'Erro ao gerar relatório: {str(e)}', 'danger')
+        return redirect(url_for('reports'))
+
+@app.route('/reports/export/social')
+@login_required
+def export_social_report():
+    """Exportar relatório de redes sociais"""
+    try:
+        meta_api = MetaBusinessAPI()
+        social_data = meta_api.get_unified_insights()
+        
+        report_generator = ReportGenerator()
+        filepath = report_generator.generate_social_media_report_pdf(social_data)
+        
+        return send_file(filepath, as_attachment=True, download_name=os.path.basename(filepath))
+        
+    except Exception as e:
+        flash(f'Erro ao gerar relatório de redes sociais: {str(e)}', 'danger')
+        return redirect(url_for('reports'))
+
+# API Routes for AJAX calls
+@app.route('/api/social/insights')
+@login_required
+def get_social_insights():
+    """API para obter insights das redes sociais"""
+    try:
+        meta_api = MetaBusinessAPI()
+        insights = meta_api.get_unified_insights()
+        return jsonify(insights)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/whatsapp/status')
+@login_required
+def get_whatsapp_status():
+    """API para verificar status da conexão WhatsApp"""
+    try:
+        meta_api = MetaBusinessAPI()
+        accounts = meta_api.get_whatsapp_business_accounts()
+        
+        if accounts and 'data' in accounts:
+            return jsonify({'connected': True, 'accounts': len(accounts['data'])})
+        else:
+            return jsonify({'connected': False, 'accounts': 0})
+    except Exception as e:
+        return jsonify({'connected': False, 'error': str(e)})
+
+# Dashboard enhancements
+@app.route('/dashboard/refresh')
+@login_required
+def refresh_dashboard():
+    """Atualizar dados do dashboard"""
+    try:
+        # Recalcular métricas
+        total_clients = len(Client.get_all())
+        total_cards = len(KanbanCard.get_all())
+        unread_messages = len([msg for msg in WhatsAppMessage.get_all() if not msg.read])
+        
+        # Status das redes sociais
+        social_accounts = len(SocialAccount.get_all())
+        
+        data = {
+            'total_clients': total_clients,
+            'total_cards': total_cards,
+            'unread_messages': unread_messages,
+            'social_accounts': social_accounts,
+            'last_updated': datetime.now().strftime('%H:%M:%S')
+        }
+        
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

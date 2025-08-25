@@ -8,6 +8,9 @@ users_db = {}
 clients_db = {}
 kanban_cards_db = {}
 whatsapp_messages_db = {}
+social_accounts_db = {}
+social_posts_db = {}
+scheduled_posts_db = {}
 
 class User(UserMixin):
     def __init__(self, username, email, name, role='atendimento'):
@@ -182,3 +185,62 @@ class WhatsAppMessage:
             message.read = True
             return True
         return False
+
+class SocialAccount:
+    def __init__(self, platform, account_id, name, access_token=None):
+        self.id = len(social_accounts_db) + 1
+        self.platform = platform  # whatsapp, instagram, facebook
+        self.account_id = account_id
+        self.name = name
+        self.access_token = access_token
+        self.connected = True
+        self.created_at = datetime.now()
+        self.last_sync = datetime.now()
+    
+    @staticmethod
+    def save(account):
+        social_accounts_db[account.id] = account
+        return account
+    
+    @staticmethod
+    def get_all():
+        return list(social_accounts_db.values())
+    
+    @staticmethod
+    def get_by_platform(platform):
+        return [acc for acc in social_accounts_db.values() if acc.platform == platform]
+
+class SocialPost:
+    def __init__(self, account_id, content, platform, post_type='text'):
+        self.id = len(social_posts_db) + 1
+        self.account_id = account_id
+        self.content = content
+        self.platform = platform
+        self.post_type = post_type  # text, image, video
+        self.scheduled_time = None
+        self.published = False
+        self.published_at = None
+        self.created_at = datetime.now()
+        self.metrics = {
+            'likes': 0,
+            'comments': 0,
+            'shares': 0,
+            'reach': 0
+        }
+    
+    @staticmethod
+    def save(post):
+        social_posts_db[post.id] = post
+        return post
+    
+    @staticmethod
+    def get_all():
+        return list(social_posts_db.values())
+    
+    @staticmethod
+    def get_by_platform(platform):
+        return [post for post in social_posts_db.values() if post.platform == platform]
+    
+    @staticmethod
+    def get_scheduled():
+        return [post for post in social_posts_db.values() if post.scheduled_time and not post.published]

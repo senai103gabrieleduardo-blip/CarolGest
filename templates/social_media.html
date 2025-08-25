@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Redes Sociais - Monteiro Corretora{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="fas fa-share-alt"></i> Gerenciamento de Redes Sociais</h1>
+                <p class="text-muted">Instagram, Facebook e WhatsApp Business integrados</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-success me-2" onclick="connectAccounts()">
+                    <i class="fas fa-link"></i> Conectar Contas
+                </button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postModal">
+                    <i class="fas fa-plus"></i> Novo Post
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status das Contas Conectadas -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-left-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>WhatsApp Business</h5>
+                        <p class="mb-0" id="whatsapp-status">Verificando...</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fab fa-whatsapp fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-left-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Instagram Business</h5>
+                        <p class="mb-0">{{ accounts|selectattr("platform", "equalto", "instagram")|list|length }} conta(s)</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fab fa-instagram fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-left-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5>Facebook Pages</h5>
+                        <p class="mb-0">{{ accounts|selectattr("platform", "equalto", "facebook")|list|length }} página(s)</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fab fa-facebook fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Insights Unificados -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Insights das Redes Sociais</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <h3 class="text-primary">{{ insights.total_followers or 0 }}</h3>
+                            <p class="text-muted">Total de Seguidores</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <h3 class="text-success">{{ insights.total_engagement or 0 }}</h3>
+                            <p class="text-muted">Engajamento Total</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <h3 class="text-warning">{{ insights.total_reach or 0 }}</h3>
+                            <p class="text-muted">Alcance Total</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-box">
+                            <h3 class="text-info">{{ recent_posts|length }}</h3>
+                            <p class="text-muted">Posts Recentes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contas Conectadas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Contas Conectadas</h5>
+            </div>
+            <div class="card-body">
+                {% if accounts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Plataforma</th>
+                                <th>Nome da Conta</th>
+                                <th>ID da Conta</th>
+                                <th>Status</th>
+                                <th>Última Sincronização</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account in accounts %}
+                            <tr>
+                                <td>
+                                    {% if account.platform == 'instagram' %}
+                                        <i class="fab fa-instagram text-primary"></i> Instagram
+                                    {% elif account.platform == 'facebook' %}
+                                        <i class="fab fa-facebook text-info"></i> Facebook
+                                    {% elif account.platform == 'whatsapp' %}
+                                        <i class="fab fa-whatsapp text-success"></i> WhatsApp
+                                    {% endif %}
+                                </td>
+                                <td>{{ account.name }}</td>
+                                <td><code>{{ account.account_id }}</code></td>
+                                <td>
+                                    {% if account.connected %}
+                                        <span class="badge bg-success">Conectada</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Desconectada</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ account.last_sync.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="syncAccount('{{ account.id }}')">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewInsights('{{ account.id }}')">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-share-alt text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Nenhuma conta conectada</h4>
+                    <p class="text-muted">Conecte suas contas do Instagram e Facebook para começar.</p>
+                    <button class="btn btn-primary" onclick="connectAccounts()">
+                        <i class="fas fa-link"></i> Conectar Primeira Conta
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Posts Recentes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-images"></i> Posts Recentes</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_posts %}
+                <div class="row">
+                    {% for post in recent_posts %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card post-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if post.platform == 'instagram' %}
+                                        <i class="fab fa-instagram text-primary"></i>
+                                    {% elif post.platform == 'facebook' %}
+                                        <i class="fab fa-facebook text-info"></i>
+                                    {% endif %}
+                                    {{ post.platform.title() }}
+                                </div>
+                                <div>
+                                    {% if post.published %}
+                                        <span class="badge bg-success">Publicado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Rascunho</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ post.content[:100] }}{% if post.content|length > 100 %}...{% endif %}</p>
+                                <small class="text-muted">
+                                    {% if post.published %}
+                                        Publicado em {{ post.published_at.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        Criado em {{ post.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    {% endif %}
+                                </small>
+                                
+                                {% if post.published and post.metrics %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-heart"></i> {{ post.metrics.likes }}
+                                        <i class="fas fa-comment ms-2"></i> {{ post.metrics.comments }}
+                                        <i class="fas fa-share ms-2"></i> {{ post.metrics.shares }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-images text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Nenhum post criado</h4>
+                    <p class="text-muted">Crie seu primeiro post para suas redes sociais.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Novo Post -->
+<div class="modal fade" id="postModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Criar Novo Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_social_post') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="platform" class="form-label">Plataforma *</label>
+                            <select class="form-control" id="platform" name="platform" required>
+                                <option value="">Selecione a plataforma...</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="instagram">Instagram</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="account_id" class="form-label">Conta *</label>
+                            <select class="form-control" id="account_id" name="account_id" required>
+                                <option value="">Selecione uma conta...</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}" data-platform="{{ account.platform }}">{{ account.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Conteúdo do Post *</label>
+                        <textarea class="form-control" id="content" name="content" rows="4" required placeholder="Escreva o conteúdo do seu post..."></textarea>
+                        <div class="form-text">
+                            <span id="char-count">0</span>/2200 caracteres
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="publish_now" name="publish_now" value="1">
+                            <label class="form-check-label" for="publish_now">
+                                Publicar imediatamente
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Dica:</strong> Para o Instagram, será necessário adicionar uma imagem. Para melhores resultados, use hashtags relevantes e mencione outras contas quando apropriado.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Criar Post
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar status do WhatsApp
+function checkWhatsAppStatus() {
+    fetch('/api/whatsapp/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.getElementById('whatsapp-status');
+            if (data.connected) {
+                statusElement.innerHTML = `<span class="text-success">Conectado (${data.accounts} conta(s))</span>`;
+            } else {
+                statusElement.innerHTML = '<span class="text-danger">Desconectado</span>';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar status:', error);
+            document.getElementById('whatsapp-status').innerHTML = '<span class="text-warning">Erro na verificação</span>';
+        });
+}
+
+// Conectar contas
+function connectAccounts() {
+    if (confirm('Deseja conectar suas contas de redes sociais? Isso pode levar alguns minutos.')) {
+        window.location.href = '{{ url_for("connect_social_accounts") }}';
+    }
+}
+
+// Sincronizar conta
+function syncAccount(accountId) {
+    // Implementar sincronização da conta
+    alert('Funcionalidade de sincronização será implementada.');
+}
+
+// Visualizar insights
+function viewInsights(accountId) {
+    // Implementar visualização de insights
+    alert('Funcionalidade de insights será implementada.');
+}
+
+// Filtrar contas por plataforma
+document.getElementById('platform').addEventListener('change', function() {
+    const selectedPlatform = this.value;
+    const accountSelect = document.getElementById('account_id');
+    const options = accountSelect.querySelectorAll('option[data-platform]');
+    
+    options.forEach(option => {
+        if (selectedPlatform === '' || option.dataset.platform === selectedPlatform) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    accountSelect.value = '';
+});
+
+// Contador de caracteres
+document.getElementById('content').addEventListener('input', function() {
+    const count = this.value.length;
+    document.getElementById('char-count').textContent = count;
+    
+    if (count > 2200) {
+        document.getElementById('char-count').style.color = 'red';
+    } else if (count > 2000) {
+        document.getElementById('char-count').style.color = 'orange';
+    } else {
+        document.getElementById('char-count').style.color = '';
+    }
+});
+
+// Carregar status inicial
+document.addEventListener('DOMContentLoaded', function() {
+    checkWhatsAppStatus();
+    
+    // Atualizar status a cada 30 segundos
+    setInterval(checkWhatsAppStatus, 30000);
+});
+</script>
+
+<style>
+.metric-box {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.02);
+}
+
+.post-card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.border-left-success {
+    border-left: 4px solid #198754 !important;
+}
+
+.border-left-primary {
+    border-left: 4px solid #0d6efd !important;
+}
+
+.border-left-info {
+    border-left: 4px solid #0dcaf0 !important;
+}
+</style>
+{% endblock %}
